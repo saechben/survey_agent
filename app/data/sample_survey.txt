@@ -1,0 +1,5 @@
+# Sample survey for development and testing
+What is your preferred mode of contact? | Email, Phone, SMS
+How satisfied are you with our service? | 1, 2, 3, 4, 5
+What improvements would you like to see?
+Would you recommend us to a friend? | Yes, No
