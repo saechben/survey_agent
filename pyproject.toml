@@ -5,11 +5,18 @@ description = ""
 authors = ["Benjamin <benjamin-sae-chew@hotmail.de>"]
 readme = "README.md"
 
+packages = [{include = "app"}]
+
 [tool.poetry.dependencies]
 python = "^3.13"
 fastapi = "^0.119.0"
 langchain = "^0.3.27"
 dotenv = "^0.9.9"
+streamlit = "^1.39.0"
+pydantic = "^2.12.2"
+langchain-community = "^0.3.31"
+openai = "^2.3.0"
+langchain-openai = "^0.3.35"
 
 
 [build-system]
