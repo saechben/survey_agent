@@ -17,6 +17,8 @@ pydantic = "^2.12.2"
 langchain-community = "^0.3.31"
 openai = "^2.3.0"
 langchain-openai = "^0.3.35"
+matplotlib = "^3.10.7"
+pytest = "^8.4.2"
 
 
 [build-system]
