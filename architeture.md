@@ -1,21 +1,21 @@
 ## 1 High-Level Architecture
 
 ```mermaid
-flowchart LR
-    U[User (mobile browser via QR)]
-    CF[CloudFront CDN]
-    S3Hosting[S3 Amplify hosting]
-    WebApp[React / Next.js app]
-    AuthUsers[Cognito User Pool]
-    AuthIdentity[Cognito Identity Pool]
-    ApiGateway[API Gateway]
-    SurveyLambda[Lambda survey logic]
-    Bedrock[Amazon Bedrock]
-    Transcribe[Amazon Transcribe]
-    Polly[Amazon Polly]
-    Database[(RDS PostgreSQL)]
-    AudioBucket[(S3 audio clips)]
-    Dashboards[QuickSight dashboards]
+graph LR
+    U["User (mobile browser via QR)"]
+    CF["CloudFront CDN"]
+    S3Hosting["S3 Amplify hosting"]
+    WebApp["React / Next.js app"]
+    AuthUsers["Cognito User Pool"]
+    AuthIdentity["Cognito Identity Pool"]
+    ApiGateway["API Gateway"]
+    SurveyLambda["Lambda survey logic"]
+    Bedrock["Amazon Bedrock"]
+    Transcribe["Amazon Transcribe"]
+    Polly["Amazon Polly"]
+    Database["RDS PostgreSQL"]
+    AudioBucket["S3 audio clips"]
+    Dashboards["QuickSight dashboards"]
 
     U -->|scan QR| CF
     CF --> S3Hosting
