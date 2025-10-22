@@ -19,6 +19,7 @@ openai = "^2.3.0"
 langchain-openai = "^0.3.35"
 matplotlib = "^3.10.7"
 pytest = "^8.4.2"
+debugpy = "^1.8.17"
 
 
 [build-system]
