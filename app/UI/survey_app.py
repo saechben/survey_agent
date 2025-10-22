@@ -40,4 +40,4 @@ def run_app() -> None:
     answered_count = state.responses_count()
     st.caption(f"Answered {answered_count} of {total_questions} questions")
 
-    navigation.render(total_questions)
+    navigation.render(question, total_questions)

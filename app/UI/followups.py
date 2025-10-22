@@ -56,6 +56,7 @@ def clear(index: int) -> None:
 
     state.clear_followup(index)
     state.clear_followup_response(index)
+    state.clear_followup_requirement(index)
     st.session_state.pop(f"{FOLLOW_UP_RESPONSE_PREFIX}{index}", None)
 
 
@@ -70,6 +71,9 @@ def maybe_generate(question: SurveyQuestion, index: int, answer_text: str) -> No
     entry = get_entry(index)
     if entry and entry.get("answer") == cleaned:
         return
+
+    state.clear_followup_response(index)
+    state.mark_followup_required(index)
 
     prompt = _build_prompt(question.question, cleaned)
 
@@ -142,17 +146,26 @@ def render_followup_response_input(index: int) -> None:
     response_key = f"{FOLLOW_UP_RESPONSE_PREFIX}{index}"
     existing = state.get_followup_responses().get(index, "")
 
-    response = placeholder.text_area(
+    if response_key not in st.session_state:
+        st.session_state[response_key] = existing
+
+    def _persist_followup_response() -> None:
+        raw_value = st.session_state.get(response_key, "")
+        cleaned_value = str(raw_value).strip()
+        if cleaned_value:
+            state.set_followup_response(index, cleaned_value)
+            state.clear_followup_requirement(index)
+        else:
+            state.clear_followup_response(index)
+            if entry and entry.get("text"):
+                state.mark_followup_required(index)
+
+    placeholder.text_area(
         "Your follow-up answer",
         key=response_key,
         placeholder="Share more details here...",
-        value=existing,
         height=100,
+        on_change=_persist_followup_response,
     )
 
-    cleaned = response.strip()
-    if cleaned:
-        state.set_followup_response(index, cleaned)
-    else:
-        state.clear_followup_response(index)
-
+    _persist_followup_response()

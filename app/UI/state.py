@@ -10,6 +10,7 @@ SURVEY_COMPLETE_KEY = "survey_complete"
 FOLLOWUPS_KEY = "followups"
 FOLLOWUP_RESPONSES_KEY = "followup_responses"
 GENERATING_FOLLOWUP_KEY = "generating_followup"
+FOLLOWUP_REQUIRED_KEY = "followup_required"
 
 
 def reset() -> None:
@@ -21,6 +22,7 @@ def reset() -> None:
     st.session_state[FOLLOWUPS_KEY] = {}
     st.session_state[FOLLOWUP_RESPONSES_KEY] = {}
     st.session_state[GENERATING_FOLLOWUP_KEY] = False
+    st.session_state[FOLLOWUP_REQUIRED_KEY] = {}
 
     for key in [name for name in st.session_state.keys() if name.startswith("response_")]:
         del st.session_state[key]
@@ -35,6 +37,7 @@ def ensure_defaults(total_questions: int) -> None:
     st.session_state.setdefault(FOLLOWUPS_KEY, {})
     st.session_state.setdefault(FOLLOWUP_RESPONSES_KEY, {})
     st.session_state.setdefault(GENERATING_FOLLOWUP_KEY, False)
+    st.session_state.setdefault(FOLLOWUP_REQUIRED_KEY, {})
 
     if total_questions == 0:
         st.session_state[CURRENT_INDEX_KEY] = 0
@@ -139,6 +142,7 @@ def clear_followup(index: int) -> None:
     """Remove cached follow-up question details for a given index."""
 
     st.session_state[FOLLOWUPS_KEY].pop(index, None)
+    clear_followup_requirement(index)
 
 
 def get_followup_responses() -> Dict[int, str]:
@@ -169,3 +173,21 @@ def is_generating_followup() -> bool:
     """Return True when a follow-up question is being generated."""
 
     return bool(st.session_state[GENERATING_FOLLOWUP_KEY])
+
+
+def mark_followup_required(index: int) -> None:
+    """Flag that a question requires a follow-up answer before navigating on."""
+
+    st.session_state[FOLLOWUP_REQUIRED_KEY][index] = True
+
+
+def clear_followup_requirement(index: int) -> None:
+    """Remove any follow-up requirement for the given question."""
+
+    st.session_state[FOLLOWUP_REQUIRED_KEY].pop(index, None)
+
+
+def is_followup_requirement_pending(index: int) -> bool:
+    """Return True when a follow-up answer is still required for a question."""
+
+    return bool(st.session_state[FOLLOWUP_REQUIRED_KEY].get(index))

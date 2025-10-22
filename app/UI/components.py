@@ -52,7 +52,6 @@ def render_answer_widget(question: SurveyQuestion, index: int) -> None:
     if cleaned:
         if state.get_response(index) != cleaned:
             state.set_response(index, cleaned)
-        followups.maybe_generate(question, index, cleaned)
     else:
         state.clear_response(index)
         followups.clear(index)
