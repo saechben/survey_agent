@@ -6,7 +6,7 @@ import streamlit as st
 
 from app.models.survey import SurveyQuestion
 
-from . import followups, state
+from . import analysis, followups, state
 
 PLACEHOLDER_OPTION = "Select an option..."
 
@@ -87,4 +87,19 @@ def render_summary(questions: List[SurveyQuestion]) -> None:
                 st.markdown("_No follow-up response recorded._")
 
     st.divider()
-    st.button("Restart survey", on_click=state.reset)
+
+    analyze_clicked = st.button(
+        "Analyze results",
+        key="analyze_results_button",
+        type="primary",
+        disabled=state.is_analysis_visible(),
+    )
+    if analyze_clicked:
+        state.set_analysis_visible(True)
+
+    if state.is_analysis_visible():
+        analysis.render_analysis(questions)
+        st.divider()
+
+    if st.button("Restart survey", key="restart_survey_button"):
+        state.reset()

@@ -11,6 +11,7 @@ FOLLOWUPS_KEY = "followups"
 FOLLOWUP_RESPONSES_KEY = "followup_responses"
 GENERATING_FOLLOWUP_KEY = "generating_followup"
 FOLLOWUP_REQUIRED_KEY = "followup_required"
+ANALYSIS_VISIBLE_KEY = "analysis_visible"
 
 
 def reset() -> None:
@@ -23,8 +24,12 @@ def reset() -> None:
     st.session_state[FOLLOWUP_RESPONSES_KEY] = {}
     st.session_state[GENERATING_FOLLOWUP_KEY] = False
     st.session_state[FOLLOWUP_REQUIRED_KEY] = {}
+    st.session_state[ANALYSIS_VISIBLE_KEY] = False
 
     for key in [name for name in st.session_state.keys() if name.startswith("response_")]:
+        del st.session_state[key]
+
+    for key in [name for name in st.session_state.keys() if name.startswith("analysis_agent_")]:
         del st.session_state[key]
 
 
@@ -38,6 +43,7 @@ def ensure_defaults(total_questions: int) -> None:
     st.session_state.setdefault(FOLLOWUP_RESPONSES_KEY, {})
     st.session_state.setdefault(GENERATING_FOLLOWUP_KEY, False)
     st.session_state.setdefault(FOLLOWUP_REQUIRED_KEY, {})
+    st.session_state.setdefault(ANALYSIS_VISIBLE_KEY, False)
 
     if total_questions == 0:
         st.session_state[CURRENT_INDEX_KEY] = 0
@@ -76,6 +82,8 @@ def mark_complete(is_complete: bool = True) -> None:
     """Mark whether the survey was completed."""
 
     st.session_state[SURVEY_COMPLETE_KEY] = is_complete
+    if not is_complete:
+        st.session_state[ANALYSIS_VISIBLE_KEY] = False
 
 
 def is_complete() -> bool:
@@ -191,3 +199,15 @@ def is_followup_requirement_pending(index: int) -> bool:
     """Return True when a follow-up answer is still required for a question."""
 
     return bool(st.session_state[FOLLOWUP_REQUIRED_KEY].get(index))
+
+
+def set_analysis_visible(is_visible: bool) -> None:
+    """Persist whether the analysis section should be displayed."""
+
+    st.session_state[ANALYSIS_VISIBLE_KEY] = bool(is_visible)
+
+
+def is_analysis_visible() -> bool:
+    """Return True when the analysis section should be shown."""
+
+    return bool(st.session_state[ANALYSIS_VISIBLE_KEY])
