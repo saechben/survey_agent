@@ -69,8 +69,7 @@ class SurveyAnalysisAgent:
 
             User question: {query}
 
-            Provide a concise, insightful answer grounded in the survey data. Highlight notable
-            patterns or gaps where relevant.
+            The format of the answer should be structured in bullet points and concise
             """
         ).strip()
 
