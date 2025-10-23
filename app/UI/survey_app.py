@@ -11,6 +11,7 @@ def run_app() -> None:
     """Entry point for the Streamlit-based survey UI."""
 
     st.set_page_config(page_title="Survey Assistant", page_icon="📝", layout="centered")
+    components.render_fixed_logo()
 
     try:
         survey = SurveyLoader(settings.survey_file_path).survey

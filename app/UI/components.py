@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+from functools import lru_cache
+from pathlib import Path
 from typing import List
 
 import streamlit as st
@@ -9,6 +12,45 @@ from app.models.survey import SurveyQuestion
 from . import analysis, followups, state
 
 PLACEHOLDER_OPTION = "Select an option..."
+_LOGO_PATH = Path(__file__).parent / "images" / "deloitte.jpg"
+
+
+@lru_cache(maxsize=1)
+def _load_logo_base64() -> str | None:
+    if not _LOGO_PATH.exists():
+        return None
+    return base64.b64encode(_LOGO_PATH.read_bytes()).decode("ascii")
+
+
+def render_fixed_logo() -> None:
+    """Render the Deloitte logo fixed to the top-left corner."""
+
+    encoded = _load_logo_base64()
+    if not encoded:
+        return
+
+    st.markdown(
+        f"""
+        <style>
+        [data-testid="stAppViewContainer"]::before {{
+            content: "";
+            position: fixed;
+            top: 3rem;
+            left: 0.75rem;
+            display: block;
+            width: 280px;
+            height: 160px;
+            background-image: url("data:image/jpeg;base64,{encoded}");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: top left;
+            z-index: 1000;
+            pointer-events: none;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def render_question_header(current_index: int, total_questions: int, question_text: str) -> None:
