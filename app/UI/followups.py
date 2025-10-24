@@ -95,12 +95,18 @@ def maybe_generate(question: SurveyQuestion, index: int, answer_text: str) -> No
         st.warning("Using a fallback follow-up question while the AI helper is unavailable.")
         st.caption(f"Follow-up generation error: {exc}")
     else:
+        if not followup_text:
+            followup_text = _build_fallback_follow_up(question.question, cleaned)
+            source = "fallback_empty"
+        else:
+            source = "llm"
         state.set_followup(
             index,
             {
                 "answer": cleaned,
                 "text": followup_text,
                 "displayed": False,
+                "source": source,
             },
         )
     finally:
