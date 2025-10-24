@@ -1,0 +1,28 @@
+{
+  "active": {
+    "responses": {
+      "0": "Developing future-ready teams",
+      "1": "wrong output of my team because of hallucinations",
+      "2": "Technology modernization",
+      "3": "no"
+    },
+    "followups": {
+      "1": {
+        "answer": "wrong output of my team because of hallucinations",
+        "text": "Can you share a specific instance where AI hallucinations led to incorrect outputs in your team, and what you did to address it?",
+        "displayed": true,
+        "source": "llm"
+      },
+      "3": {
+        "answer": "no",
+        "text": "Is there anything else you'd like to add or clarify?",
+        "displayed": true,
+        "source": "llm"
+      }
+    },
+    "followup_responses": {
+      "1": "ownership",
+      "3": "no"
+    }
+  }
+}

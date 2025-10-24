@@ -7,6 +7,7 @@ import streamlit as st
 from app.UI import state as ui_state
 from app.models.analysis import QuestionInsight, SurveyAnalysisSnapshot
 from app.models.survey import SurveyQuestion
+from app.services.survey_database import SurveyDatabaseInterface, get_survey_database
 
 RESPONSES_KEY = ui_state.RESPONSES_KEY
 FOLLOWUPS_KEY = ui_state.FOLLOWUPS_KEY
@@ -24,10 +25,12 @@ class SurveyDataProvider:
         *,
         survey_id: str = DEFAULT_SURVEY_ID,
         session_state: MutableMapping[str, Any] | None = None,
+        database: SurveyDatabaseInterface | None = None,
     ) -> None:
         self._questions = list(questions)
         self._survey_id = survey_id
         self._session_state = session_state
+        self._database = database or get_survey_database()
 
     @property
     def _session(self) -> MutableMapping[str, Any]:
@@ -49,10 +52,11 @@ class SurveyDataProvider:
         if target_id != self._survey_id:
             raise KeyError(f"Unknown survey id: {target_id}")
 
-        session = self._session
-        responses = dict(session.get(RESPONSES_KEY, {}))
-        followups = dict(session.get(FOLLOWUPS_KEY, {}))
-        followup_responses = dict(session.get(FOLLOWUP_RESPONSES_KEY, {}))
+        record = self._database.load_survey_results(target_id) if self._database else None
+
+        responses = dict(record.responses)
+        followups = {index: dict(value) for index, value in record.followups.items()}
+        followup_responses = dict(record.followup_responses)
 
         question_insights: List[QuestionInsight] = []
         for index, question in enumerate(self._questions):

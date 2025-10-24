@@ -4,6 +4,9 @@ import streamlit as st
 
 from app.models.survey import SurveyQuestion
 
+from app.API.survey_data_provider import DEFAULT_SURVEY_ID
+from app.services.survey_database import SurveyResultRecord, get_survey_database
+
 from . import followups, state
 
 
@@ -103,6 +106,27 @@ def render(question: SurveyQuestion, total_questions: int) -> None:
     def _finish() -> None:
         if not _ensure_followup_completed():
             return
+        responses_snapshot = {
+            idx: str(value)
+            for idx, value in state.get_responses().items()
+            if value is not None
+        }
+        followups_snapshot = {idx: dict(data) for idx, data in state.get_followups().items()}
+        followup_responses_snapshot = {
+            idx: str(value)
+            for idx, value in state.get_followup_responses().items()
+            if value is not None
+        }
+        record = SurveyResultRecord(
+            survey_id=DEFAULT_SURVEY_ID,
+            responses=responses_snapshot,
+            followups=followups_snapshot,
+            followup_responses=followup_responses_snapshot,
+        )
+        try:
+            get_survey_database().save_survey_results(record)
+        except Exception as exc:  # pragma: no cover - UI notification
+            st.error(f"Unable to save survey results: {exc}")
         state.mark_complete(True)
 
     prev_col, next_col, finish_col = st.columns(3)

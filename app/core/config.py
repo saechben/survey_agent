@@ -30,5 +30,9 @@ class Settings:
         if not self.survey_file_path.is_file():
             raise RuntimeError(f"Survey file not found at {self.survey_file_path}")
 
+        results_path = os.getenv("SURVEY_RESULTS_PATH", "app/data/survey_results.txt")
+        self.survey_results_path = Path(results_path).expanduser().resolve()
+        self.survey_results_path.parent.mkdir(parents=True, exist_ok=True)
+
 
 settings = Settings()
