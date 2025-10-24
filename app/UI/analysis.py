@@ -42,18 +42,11 @@ def render_analysis(questions: List[SurveyQuestion]) -> None:
         _render_agent_interface(agent, snapshot, enabled=False)
         return
 
-    st.header("Survey Overview")
-    st.metric("Answered questions", f"{answered}/{total_questions}")
-
     if answered == 0:
         st.info("Complete the survey to see insights once responses are recorded.")
         agent = SurveyAnalysisAgent(provider, llm=_get_analysis_llm())
         _render_agent_interface(agent, snapshot, enabled=False)
         return
-
-    _render_question_breakdowns(questions, responses, followup_responses)
-
-    st.divider()
 
     agent = SurveyAnalysisAgent(provider, llm=_get_analysis_llm())
     _render_agent_interface(agent, snapshot, enabled=True)
