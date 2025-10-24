@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import time
 from textwrap import dedent
+from typing import Callable
 
 from app.API.survey_data_provider import SurveyDataProvider
 from app.models.analysis import QuestionInsight, SurveyAnalysisSnapshot
@@ -22,26 +24,46 @@ class SurveyAnalysisAgent:
         self._provider = data_provider
         self._llm = llm or LLM()
 
-    def answer(self, query: str, survey_id: str | None = None) -> str:
+    def answer(
+        self,
+        query: str,
+        survey_id: str | None = None,
+        *,
+        status_callback: Callable[[str, str], None] | None = None,
+    ) -> str:
         """Return an LLM-generated answer grounded in survey responses."""
 
         cleaned_query = (query or "").strip()
         if not cleaned_query:
             raise ValueError("query must be a non-empty string")
 
+        def notify(step: str, message: str) -> None:
+            if status_callback:
+                status_callback(step, message)
+
+        notify("fetching", "Fetching survey data...")
+        time.sleep(1)
         snapshot = self._provider.get_survey_snapshot(survey_id)
+        notify("reading", "Reading survey responses...")
+        time.sleep(1)
         if snapshot.total_questions == 0:
+            notify("completed", "No survey questions are available to analyse.")
             return "No survey questions are available to analyse."
         if snapshot.answered_count == 0:
+            notify("completed", "No responses have been recorded for this survey yet.")
             return "No responses have been recorded for this survey yet."
 
         prompt = self._build_prompt(cleaned_query, snapshot)
+        notify("thinking", "Thinking through the available survey responses...")
         try:
             response = self._llm(prompt).strip()
         except Exception as exc:  # pragma: no cover - delegated to runtime
+            notify("completed", "Unable to complete analysis.")
             return f"I couldn't generate an answer right now: {exc}"
 
-        return response or "I couldn't find relevant information to answer that question."
+        answer = response or "I couldn't find relevant information to answer that question."
+        notify("completed", "Analysis complete.")
+        return answer
 
     def _build_prompt(self, query: str, snapshot: SurveyAnalysisSnapshot) -> str:
         """Create the LLM prompt using the provided snapshot and user query."""

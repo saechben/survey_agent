@@ -129,7 +129,59 @@ def _render_agent_interface(
         if not cleaned_prompt:
             st.warning("Please provide a question for the analysis agent.")
         else:
-            answer = agent.answer(cleaned_prompt, survey_id=snapshot.survey_id)
+            status_container = st.container()
+            progress_placeholder = status_container.empty()
+            message_placeholder = status_container.empty()
+
+            status_steps = [
+                ("fetching", "Fetching survey data..."),
+                ("reading", "Reading survey responses..."),
+                ("thinking", "Thinking through insights..."),
+            ]
+            step_order = [step for step, _ in status_steps]
+            completed_steps: set[str] = set()
+            current_step: str | None = None
+
+            def render_status(current: str | None) -> None:
+                lines = []
+                for step, label in status_steps:
+                    if step in completed_steps:
+                        prefix = "[x]"
+                    elif step == current:
+                        prefix = "[>]"
+                    else:
+                        prefix = "[ ]"
+                    lines.append(f"- {prefix} {label}")
+                progress_placeholder.markdown("\n".join(lines))
+
+            def handle_status(step: str, message: str) -> None:
+                nonlocal current_step
+                if step == "completed":
+                    completed_steps.update(step_order)
+                    current_step = None
+                    render_status(current_step)
+                    if "complete" in message.lower():
+                        message_placeholder.success(message)
+                    else:
+                        message_placeholder.info(message)
+                    return
+
+                if step not in step_order:
+                    message_placeholder.info(message)
+                    return
+
+                step_index = step_order.index(step)
+                completed_steps.update(step_order[:step_index])
+                current_step = step
+                render_status(current_step)
+                message_placeholder.info(message)
+
+            render_status(current_step)
+            answer = agent.answer(
+                cleaned_prompt,
+                survey_id=snapshot.survey_id,
+                status_callback=handle_status,
+            )
             history.append({"question": cleaned_prompt, "answer": answer})
             if len(history) > _MAX_AGENT_HISTORY:
                 del history[: len(history) - _MAX_AGENT_HISTORY]
