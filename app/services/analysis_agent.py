@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 import time
 from textwrap import dedent
 from typing import Callable
@@ -41,11 +42,7 @@ class SurveyAnalysisAgent:
             if status_callback:
                 status_callback(step, message)
 
-        notify("fetching", "Fetching survey data...")
-        time.sleep(1)
         snapshot = self._provider.get_survey_snapshot(survey_id)
-        notify("reading", "Reading survey responses...")
-        time.sleep(1)
         if snapshot.total_questions == 0:
             notify("completed", "No survey questions are available to analyse.")
             return "No survey questions are available to analyse."
@@ -54,14 +51,34 @@ class SurveyAnalysisAgent:
             return "No responses have been recorded for this survey yet."
 
         prompt = self._build_prompt(cleaned_query, snapshot)
+        result_holder: dict[str, str] = {}
+        error_holder: dict[str, Exception] = {}
+
+        def _call_llm() -> None:
+            try:
+                result_holder["value"] = self._llm(prompt).strip()
+            except Exception as exc:  # pragma: no cover - delegated to runtime
+                error_holder["error"] = exc
+
+        worker = threading.Thread(target=_call_llm, daemon=True)
+        worker.start()
+
+        for step, message in (
+            ("fetching", "Fetching survey data..."),
+            ("reading", "Reading survey responses..."),
+        ):
+            notify(step, message)
+            time.sleep(1)
+
         notify("thinking", "Thinking through the available survey responses...")
-        try:
-            response = self._llm(prompt).strip()
-        except Exception as exc:  # pragma: no cover - delegated to runtime
+
+        worker.join()
+        if "error" in error_holder:
             notify("completed", "Unable to complete analysis.")
+            exc = error_holder["error"]
             return f"I couldn't generate an answer right now: {exc}"
 
-        answer = response or "I couldn't find relevant information to answer that question."
+        answer = result_holder.get("value", "") or "I couldn't find relevant information to answer that question."
         notify("completed", "Analysis complete.")
         return answer
 
