@@ -31,28 +31,12 @@ class SurveyLoader:
 
         questions = list(self._load_questions())
         self._survey = Survey(questions=questions)
-        self._cursor = 0
 
     @property
     def survey(self) -> Survey:
         """Return the full survey loaded from the file."""
 
         return self._survey
-
-    def next_question(self) -> SurveyQuestion | None:
-        """Return the next question or ``None`` once exhausted."""
-
-        if self._cursor >= len(self._survey.questions):
-            return None
-
-        question = self._survey.questions[self._cursor]
-        self._cursor += 1
-        return question
-
-    def reset(self) -> None:
-        """Reset the internal cursor so iteration can begin again."""
-
-        self._cursor = 0
 
     def _load_questions(self) -> Iterable[SurveyQuestion]:
         with self._path.open("r", encoding="utf-8") as handle:

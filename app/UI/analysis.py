@@ -10,7 +10,7 @@ from app.models.survey import SurveyQuestion
 from app.services.analysis_agent import SurveyAnalysisAgent
 from app.services.LLM import LLM
 
-from . import followups, state
+from . import state
 
 _AGENT_HISTORY_KEY = "analysis_agent_history"
 _AGENT_PROMPT_KEY = "analysis_agent_prompt"
@@ -29,7 +29,6 @@ def render_analysis(questions: List[SurveyQuestion]) -> None:
     """Render analysis details and the interactive agent for survey insights."""
 
     responses = state.get_responses()
-    followup_responses = state.get_followup_responses()
     total_questions = len(questions)
     answered = len(responses)
 
@@ -50,46 +49,6 @@ def render_analysis(questions: List[SurveyQuestion]) -> None:
 
     agent = SurveyAnalysisAgent(provider, llm=_get_analysis_llm())
     _render_agent_interface(agent, snapshot, enabled=True)
-
-
-def _render_question_breakdowns(
-    questions: List[SurveyQuestion],
-    responses: dict[int, str],
-    followup_responses: dict[int, str],
-) -> None:
-    """Render per-question charts and summaries."""
-
-    st.header("Per Question Details")
-
-    for index, question in enumerate(questions):
-        st.subheader(question.question)
-        response = responses.get(index)
-
-        if question.answer.type == "categorical" and response:
-            st.markdown(f"**Selected answer:** {response}")
-        elif response:
-            _render_textual_summary(response)
-        else:
-            st.markdown("_No response recorded._")
-
-        followup_entry = followups.get_entry(index)
-        if followup_entry and followup_entry.get("text"):
-            st.markdown(f"{followups.FOLLOW_UP_LABEL}{followup_entry['text']}")
-            followup_answer = followup_responses.get(index)
-            if followup_answer:
-                _render_textual_summary(followup_answer, label="Follow-up answer")
-            else:
-                st.markdown("_No follow-up response recorded._")
-
-
-def _render_textual_summary(text: str, label: str = "Response summary") -> None:
-    """Render a quick summary for free-text responses."""
-
-    word_count = len(text.split())
-    char_count = len(text)
-    st.markdown(f"**{label}:**")
-    st.write(text)
-    st.caption(f"Characters: {char_count} • Words: {word_count}")
 
 
 def _render_agent_interface(

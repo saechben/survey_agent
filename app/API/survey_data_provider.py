@@ -1,17 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, List, MutableMapping, Sequence
-
-import streamlit as st
-
-from app.UI import state as ui_state
+from typing import Any, List, Sequence
 from app.models.analysis import QuestionInsight, SurveyAnalysisSnapshot
 from app.models.survey import SurveyQuestion
 from app.services.survey_database import SurveyDatabaseInterface, get_survey_database
-
-RESPONSES_KEY = ui_state.RESPONSES_KEY
-FOLLOWUPS_KEY = ui_state.FOLLOWUPS_KEY
-FOLLOWUP_RESPONSES_KEY = ui_state.FOLLOWUP_RESPONSES_KEY
 
 DEFAULT_SURVEY_ID = "active"
 
@@ -24,26 +16,11 @@ class SurveyDataProvider:
         questions: Sequence[SurveyQuestion],
         *,
         survey_id: str = DEFAULT_SURVEY_ID,
-        session_state: MutableMapping[str, Any] | None = None,
         database: SurveyDatabaseInterface | None = None,
     ) -> None:
         self._questions = list(questions)
         self._survey_id = survey_id
-        self._session_state = session_state
         self._database = database or get_survey_database()
-
-    @property
-    def _session(self) -> MutableMapping[str, Any]:
-        if self._session_state is not None:
-            return self._session_state
-        return st.session_state
-
-    def list_surveys(self) -> List[str]:
-        """Return all available survey identifiers."""
-
-        if not self._questions:
-            return []
-        return [self._survey_id]
 
     def get_survey_snapshot(self, survey_id: str | None = None) -> SurveyAnalysisSnapshot:
         """Return an immutable snapshot for the requested survey."""
@@ -53,10 +30,14 @@ class SurveyDataProvider:
             raise KeyError(f"Unknown survey id: {target_id}")
 
         record = self._database.load_survey_results(target_id) if self._database else None
-
-        responses = dict(record.responses)
-        followups = {index: dict(value) for index, value in record.followups.items()}
-        followup_responses = dict(record.followup_responses)
+        if record is None:
+            responses: dict[int, str] = {}
+            followups: dict[int, dict[str, Any]] = {}
+            followup_responses: dict[int, str] = {}
+        else:
+            responses = dict(record.responses)
+            followups = {index: dict(value) for index, value in record.followups.items()}
+            followup_responses = dict(record.followup_responses)
 
         question_insights: List[QuestionInsight] = []
         for index, question in enumerate(self._questions):
@@ -84,20 +65,6 @@ class SurveyDataProvider:
             questions=question_insights,
         )
 
-    def list_question_responses(self, survey_id: str | None = None) -> List[QuestionInsight]:
-        """Return ordered question insights for the requested survey."""
-
-        snapshot = self.get_survey_snapshot(survey_id)
-        return snapshot.questions
-
-    def get_question_response(self, index: int, survey_id: str | None = None) -> QuestionInsight:
-        """Return a single question insight for the requested survey."""
-
-        snapshot = self.get_survey_snapshot(survey_id)
-        try:
-            return snapshot.questions[index]
-        except IndexError as exc:  # pragma: no cover - defensive branch
-            raise IndexError(f"Invalid question index: {index}") from exc
 
 
 def _clean_str(value: Any) -> str | None:

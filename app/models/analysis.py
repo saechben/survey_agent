@@ -51,8 +51,3 @@ class SurveyAnalysisSnapshot(BaseModel):
         """Count how many questions include a primary response."""
 
         return sum(1 for question in self.questions if question.has_primary_response)
-
-    def answered_questions(self) -> List[QuestionInsight]:
-        """Return only those questions that contain primary responses."""
-
-        return [question for question in self.questions if question.has_primary_response]
