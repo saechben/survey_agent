@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import Dict, Optional
 
 import streamlit as st
@@ -8,11 +7,10 @@ import streamlit as st
 from app.models.survey import SurveyQuestion
 from app.services.followup_agent import FollowUpAgent
 
-from . import state
+from . import speech_controls, state
 
 FOLLOW_UP_LABEL = "**Follow-up question:** "
 FOLLOW_UP_RESPONSE_PREFIX = "followup_response_"
-_STREAM_DELAY_SECONDS = 0.05
 
 
 @st.cache_resource
@@ -129,21 +127,30 @@ def render_followup_question(index: int) -> None:
     if not entry or not entry.get("text"):
         return
 
-    placeholder = st.container().empty()
+    text_value = str(entry["text"])
 
-    if entry.get("displayed"):
-        placeholder.markdown(FOLLOW_UP_LABEL + str(entry["text"]))
-        return
+    cache_id = f"followup_{index}"
+    auto_enabled = speech_controls.is_auto_tts_enabled()
 
-    words = str(entry["text"]).split()
-    accumulated = ""
-    for word in words:
-        accumulated = (accumulated + " " + word).strip()
-        placeholder.markdown(FOLLOW_UP_LABEL + accumulated)
-        time.sleep(_STREAM_DELAY_SECONDS)
+    if entry.get("displayed") is False:
+        entry["displayed"] = True
+        state.set_followup(index, entry)
 
-    entry["displayed"] = True
-    state.set_followup(index, entry)
+    speech_controls.maybe_autoplay_followup(
+        text_value,
+        cache_id=cache_id,
+    )
+    speech_controls.render_question_text(
+        text_value,
+        cache_id=cache_id,
+        animate=auto_enabled,
+        prefix_markdown=FOLLOW_UP_LABEL,
+    )
+    speech_controls.render_playback_button(
+        text_value,
+        label="🔊 Play follow-up question",
+        cache_id=cache_id,
+    )
 
 
 def render_followup_response_input(index: int) -> None:
@@ -184,3 +191,12 @@ def render_followup_response_input(index: int) -> None:
     )
 
     _persist_followup_response()
+
+    transcript = speech_controls.render_transcription_controls(
+        form_key=f"followup_{index}",
+        title="Answer follow-up with audio",
+    )
+    if transcript:
+        st.session_state[response_key] = transcript
+        state.set_followup_response(index, transcript)
+        state.clear_followup_requirement(index)

@@ -9,7 +9,7 @@ import streamlit as st
 
 from app.models.survey import SurveyQuestion
 
-from . import analysis, followups, state
+from . import analysis, followups, speech_controls, state
 
 PLACEHOLDER_OPTION = "Select an option..."
 _LOGO_PATH = Path(__file__).parent / "images" / "deloitte.jpg"
@@ -57,8 +57,28 @@ def render_question_header(current_index: int, total_questions: int, question_te
     """Render progress information and the active question text."""
 
     st.progress((current_index + 1) / total_questions)
-    st.markdown(f"### Question {current_index + 1} of {total_questions}")
-    st.write(question_text)
+    header_col, toggle_col = st.columns([3, 1])
+    with header_col:
+        st.markdown(f"### Question {current_index + 1} of {total_questions}")
+    with toggle_col:
+        auto_enabled = speech_controls.render_tts_toggle()
+
+    question_cache_id = speech_controls.prepare_question_render(current_index)
+    speech_controls.autoplay_question(
+        question_text,
+        cache_id=question_cache_id,
+        enabled=auto_enabled,
+    )
+    speech_controls.render_question_text(
+        question_text,
+        cache_id=question_cache_id,
+        animate=auto_enabled,
+    )
+    speech_controls.render_playback_button(
+        question_text,
+        label="🔊 Play question audio",
+        cache_id=question_cache_id,
+    )
 
 
 def render_answer_widget(question: SurveyQuestion, index: int) -> None:
@@ -97,6 +117,14 @@ def render_answer_widget(question: SurveyQuestion, index: int) -> None:
     else:
         state.clear_response(index)
         followups.clear(index)
+
+    transcript = speech_controls.render_transcription_controls(
+        form_key=f"question_{index}",
+        title="Use audio input",
+    )
+    if transcript:
+        st.session_state[widget_key] = transcript
+        state.set_response(index, transcript)
 
     followups.render_followup_question(index)
     followups.render_followup_response_input(index)
