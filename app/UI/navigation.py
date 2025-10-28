@@ -79,8 +79,17 @@ def render(question: SurveyQuestion, total_questions: int) -> None:
         if not followup_question:
             if not state.is_generating_followup():
                 followups.maybe_generate(question, current_index, response)
-            state.mark_followup_required(current_index)
-            return False
+                entry = state.get_followups().get(current_index) or {}
+                followup_question = entry.get("text")
+                should_ask = entry.get("should_ask", True)
+
+            if should_ask is False:
+                state.clear_followup_requirement(current_index)
+                return True
+
+            if not followup_question:
+                state.mark_followup_required(current_index)
+                return False
 
         if not followup_answer or not followup_answer.strip():
             raw_widget_value = st.session_state.get(f"{followups.FOLLOW_UP_RESPONSE_PREFIX}{current_index}", "")
