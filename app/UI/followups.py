@@ -6,7 +6,7 @@ from typing import Dict, Optional
 import streamlit as st
 
 from app.models.survey import SurveyQuestion
-from app.services.LLM import LLM
+from app.services.followup_agent import FollowUpAgent
 
 from . import state
 
@@ -16,23 +16,10 @@ _STREAM_DELAY_SECONDS = 0.05
 
 
 @st.cache_resource
-def _get_llm() -> LLM:
-    """Return the shared LLM client instance."""
+def _get_agent() -> FollowUpAgent:
+    """Return the shared follow-up decision agent."""
 
-    return LLM()
-
-
-def _build_prompt(question: str, answer: str) -> str:
-    """Craft the prompt used for the follow-up generation."""
-
-    return (
-        "You are a thoughtful survey assistant. Given the original survey question and "
-        "the respondent's answer, generate exactly one concise follow-up question that "
-        "encourages them to elaborate further. Do not include any preamble or commentary.\n"
-        f"Original question: {question}\n"
-        f"Respondent answer: {answer}\n"
-        "Follow-up question:"
-    )
+    return FollowUpAgent()
 
 
 def _build_fallback_follow_up(question: str, answer: str) -> str:
@@ -75,12 +62,10 @@ def maybe_generate(question: SurveyQuestion, index: int, answer_text: str) -> No
     state.clear_followup_response(index)
     state.mark_followup_required(index)
 
-    prompt = _build_prompt(question.question, cleaned)
-
     try:
         state.set_generating_followup(True)
         with st.spinner("Generating follow-up question..."):
-            followup_text = _get_llm()(prompt).strip()
+            decision = _get_agent().decide(question.question, cleaned)
     except Exception as exc:  # pragma: no cover - UI feedback path
         fallback_text = _build_fallback_follow_up(question.question, cleaned)
         state.set_followup(
@@ -90,27 +75,51 @@ def maybe_generate(question: SurveyQuestion, index: int, answer_text: str) -> No
                 "text": fallback_text,
                 "displayed": False,
                 "source": "fallback",
+                "should_ask": True,
+                "rationale": None,
             },
         )
         st.warning("Using a fallback follow-up question while the AI helper is unavailable.")
         st.caption(f"Follow-up generation error: {exc}")
     else:
-        if not followup_text:
-            followup_text = _build_fallback_follow_up(question.question, cleaned)
-            source = "fallback_empty"
+        rationale = getattr(decision, "rationale", None)
+        if not getattr(decision, "should_ask", False):
+            state.set_followup(
+                index,
+                {
+                    "answer": cleaned,
+                    "text": None,
+                    "displayed": True,
+                    "source": "agent_skip",
+                    "should_ask": False,
+                    "rationale": rationale,
+                },
+            )
+            state.clear_followup_requirement(index)
         else:
-            source = "llm"
-        state.set_followup(
-            index,
-            {
-                "answer": cleaned,
-                "text": followup_text,
-                "displayed": False,
-                "source": source,
-            },
-        )
+            followup_text = (decision.follow_up_question or "").strip()
+            if not followup_text:
+                followup_text = _build_fallback_follow_up(question.question, cleaned)
+                source = "fallback_empty"
+            else:
+                source = "agent"
+            state.set_followup(
+                index,
+                {
+                    "answer": cleaned,
+                    "text": followup_text,
+                    "displayed": False,
+                    "source": source,
+                    "should_ask": True,
+                    "rationale": rationale,
+                },
+            )
     finally:
         state.set_generating_followup(False)
+
+    entry = get_entry(index)
+    if entry and entry.get("should_ask") is False:
+        state.clear_followup_requirement(index)
 
 
 def render_followup_question(index: int) -> None:

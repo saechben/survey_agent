@@ -70,6 +70,11 @@ def render(question: SurveyQuestion, total_questions: int) -> None:
         entry = state.get_followups().get(current_index) or {}
         followup_question = entry.get("text")
         followup_answer = state.get_followup_responses().get(current_index)
+        should_ask = entry.get("should_ask", True)
+
+        if should_ask is False:
+            state.clear_followup_requirement(current_index)
+            return True
 
         if not followup_question:
             if not state.is_generating_followup():

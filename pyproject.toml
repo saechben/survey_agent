@@ -15,11 +15,12 @@ dotenv = "^0.9.9"
 streamlit = "^1.39.0"
 pydantic = "^2.12.2"
 langchain-community = "^0.3.31"
-openai = "^2.3.0"
+openai = "^2.6.1"
 langchain-openai = "^0.3.35"
 matplotlib = "^3.10.7"
 pytest = "^8.4.2"
 debugpy = "^1.8.17"
+pydantic-ai = "^1.6.0"
 
 
 [build-system]
