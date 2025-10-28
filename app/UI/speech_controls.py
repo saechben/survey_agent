@@ -12,7 +12,6 @@ from app.core.config import settings
 from app.services.speech import OpenAISpeechService, SpeechServiceError
 
 _AUDIO_CACHE_KEY = "speech_audio_cache"
-_SUPPORTED_UPLOAD_TYPES = ["mp3", "wav", "m4a", "ogg", "webm"]
 _AUTO_TTS_STATE_KEY = "speech_auto_tts_enabled"
 _AUTO_TTS_BUTTON_KEY = "speech_auto_tts_button"
 _QUESTION_INDEX_TRACK_KEY = "speech_last_question_index"
@@ -20,6 +19,8 @@ _AUDIO_EVENT_STATE_KEY = "speech_audio_events"
 _TYPEWRITER_DONE_KEY = "speech_typewriter_complete"
 _TYPEWRITER_DELAY_SECONDS = 0.085
 _SESSION_VERSION_KEY = "speech_audio_session_version"
+_RECORDING_STATE_SUFFIX = "_recording_active"
+_AUDIO_WIDGET_SUFFIX = "_audio_input"
 
 
 @st.cache_resource
@@ -227,50 +228,80 @@ def maybe_autoplay_followup(text: str, *, cache_id: str) -> None:
     entry["started"] = True
 
 
-def render_transcription_controls(form_key: str, *, title: str) -> str | None:
-    """Render an expander that accepts audio input and returns the transcribed text."""
+def render_audio_record_button(form_key: str, *, help_text: str | None = None) -> None:
+    """Render a microphone toggle button used to capture audio with Streamlit."""
 
-    with st.expander(title, expanded=False):
-        upload_key = f"{form_key}_audio_upload"
-        uploaded = st.file_uploader(
-            "Upload an audio recording",
-            key=upload_key,
-            type=_SUPPORTED_UPLOAD_TYPES,
-            accept_multiple_files=False,
-        )
+    active_key = f"{form_key}{_RECORDING_STATE_SUFFIX}"
+    audio_key = f"{form_key}{_AUDIO_WIDGET_SUFFIX}"
+    is_active = bool(st.session_state.get(active_key, False))
 
-        transcribe_key = f"{form_key}_transcribe_button"
-        transcribe_clicked = st.button(
-            "Transcribe audio",
-            key=transcribe_key,
-            disabled=uploaded is None,
-        )
+    label = "⏹️" if is_active else "🎤"
+    button_type = "primary" if is_active else "secondary"
+    tooltip = help_text or (
+        "Stop recording" if is_active else "Record your answer using your microphone."
+    )
 
-        st.caption("Supported formats: mp3, wav, m4a, ogg, webm.")
+    clicked = st.button(
+        label,
+        key=f"{form_key}_record_button",
+        type=button_type,
+        use_container_width=True,
+        help=tooltip,
+    )
 
-        if not uploaded or not transcribe_clicked:
-            return None
+    if clicked:
+        is_active = not is_active
+        st.session_state[active_key] = is_active
+        st.session_state.pop(audio_key, None)
 
-        audio_bytes = uploaded.read()
-        uploaded.seek(0)
 
-        try:
-            with st.spinner("Transcribing audio..."):
-                transcript = get_speech_service().transcribe(audio_bytes, mime_type=getattr(uploaded, "type", None))
-        except SpeechServiceError as exc:  # pragma: no cover - UI feedback path
-            st.error(f"Transcription failed: {exc}")
-            return None
-        except Exception as exc:  # pragma: no cover - UI feedback path
-            st.error(f"Unexpected transcription error: {exc}")
-            return None
+def process_audio_recording(
+    form_key: str,
+    *,
+    prompt: str,
+) -> str | None:
+    """Display the native audio recorder and return the transcript when available."""
 
-        cleaned = (transcript or "").strip()
-        if not cleaned:
-            st.warning("No speech detected in the uploaded audio.")
-            return None
+    active_key = f"{form_key}{_RECORDING_STATE_SUFFIX}"
+    audio_key = f"{form_key}{_AUDIO_WIDGET_SUFFIX}"
 
-        st.success("Transcription completed.")
-        return cleaned
+    if not st.session_state.get(active_key):
+        return None
+
+    st.caption("Recording active — use the control below to speak your answer.")
+    audio_file = st.audio_input(prompt, key=audio_key)
+    if not audio_file:
+        return None
+
+    audio_bytes = audio_file.getvalue()
+    if not audio_bytes:
+        st.warning("No audio captured. Try recording again.")
+        return None
+
+    try:
+        with st.spinner("Transcribing audio..."):
+            transcript = get_speech_service().transcribe(audio_bytes, mime_type=getattr(audio_file, "type", None))
+    except SpeechServiceError as exc:  # pragma: no cover - UI feedback path
+        st.error(f"Transcription failed: {exc}")
+        st.session_state[active_key] = False
+        st.session_state.pop(audio_key, None)
+        return None
+    except Exception as exc:  # pragma: no cover - UI feedback path
+        st.error(f"Unexpected transcription error: {exc}")
+        st.session_state[active_key] = False
+        st.session_state.pop(audio_key, None)
+        return None
+
+    st.session_state[active_key] = False
+    st.session_state.pop(audio_key, None)
+
+    cleaned = (transcript or "").strip()
+    if not cleaned:
+        st.warning("No speech detected in the recording.")
+        return None
+
+    st.success("Transcription completed.")
+    return cleaned
 
 
 def _render_autoplay_audio(
