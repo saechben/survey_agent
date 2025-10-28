@@ -104,68 +104,67 @@ def render_answer_widget(question: SurveyQuestion, index: int) -> None:
             followups.clear(index)
         return
 
-    if widget_key not in st.session_state:
-        st.session_state[widget_key] = state.get_response(index) or ""
-
     voice_key = f"{form_key}_voice_response"
 
     text_col, mic_col = st.columns([12, 1], vertical_alignment="bottom")
-    with text_col:
-        st.text_area(
-            "Your answer",
-            key=widget_key,
-            value=st.session_state.get(widget_key, ""),
-            placeholder="Type your answer here...",
-        )
-        transcript_placeholder = st.empty()
     with mic_col:
         speech_controls.render_audio_record_button(
             form_key=form_key,
             help_text="Record your answer with your microphone.",
         )
 
-    transcript = speech_controls.process_audio_recording(
-        form_key=form_key,
-        prompt="Record your answer",
-    )
-    typed_value = str(st.session_state.get(widget_key, "")).strip()
-    voice_value = st.session_state.get(voice_key)
+    with text_col:
+        transcript = speech_controls.process_audio_recording(
+            form_key=form_key,
+            prompt="Record your answer",
+        )
 
-    final_value = None
+        if widget_key not in st.session_state:
+            st.session_state[widget_key] = state.get_response(index) or ""
 
-    if transcript:
-        cleaned_transcript = transcript.strip()
-        if cleaned_transcript:
-            st.session_state[voice_key] = cleaned_transcript
-            voice_value = cleaned_transcript
-            final_value = cleaned_transcript
-        else:
-            st.session_state.pop(voice_key, None)
-            voice_value = None
+        typed_value = str(st.session_state.get(widget_key, "")).strip()
+        voice_value = st.session_state.get(voice_key)
 
-    if final_value is None:
+        if transcript:
+            cleaned_transcript = transcript.strip()
+            if cleaned_transcript:
+                st.session_state[voice_key] = cleaned_transcript
+                voice_value = cleaned_transcript
+            else:
+                st.session_state.pop(voice_key, None)
+                voice_value = None
+
         if typed_value:
             final_value = typed_value
-            st.session_state.pop(voice_key, None)
-            voice_value = None
-        elif voice_value:
-            final_value = voice_value
+            if voice_value is not None:
+                st.session_state.pop(voice_key, None)
+                voice_value = None
         else:
-            final_value = ""
+            final_value = voice_value or ""
 
-    if final_value:
-        if state.get_response(index) != final_value:
-            state.set_response(index, final_value)
-    else:
-        st.session_state.pop(voice_key, None)
-        state.clear_response(index)
-        followups.clear(index)
+        if final_value:
+            if state.get_response(index) != final_value:
+                state.set_response(index, final_value)
+        else:
+            st.session_state.pop(voice_key, None)
+            state.clear_response(index)
+            followups.clear(index)
 
-    preview_text = st.session_state.get(voice_key)
-    if preview_text:
-        transcript_placeholder.markdown(f"_Recorded answer:_ {preview_text}")
-    else:
-        transcript_placeholder.empty()
+        display_value = typed_value if typed_value else (voice_value or "")
+        st.session_state[widget_key] = display_value
+
+        st.text_area(
+            "Your answer",
+            key=widget_key,
+            placeholder="Type your answer here...",
+        )
+        transcript_placeholder = st.empty()
+
+        preview_text = st.session_state.get(voice_key)
+        if preview_text:
+            transcript_placeholder.markdown(f"_Recorded answer:_ {preview_text}")
+        else:
+            transcript_placeholder.empty()
 
     followups.render_followup_question(index)
     followups.render_followup_response_input(index)

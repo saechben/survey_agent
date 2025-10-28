@@ -180,55 +180,53 @@ def render_followup_response_input(index: int) -> None:
                 help_text="Record your follow-up answer with your microphone.",
             )
         with text_col:
+            transcript = speech_controls.process_audio_recording(
+                form_key=f"followup_{index}",
+                prompt="Record your follow-up answer",
+            )
+
+            typed_value = str(st.session_state.get(response_key, "")).strip()
+            voice_value = st.session_state.get(voice_key)
+
+            if transcript:
+                cleaned_transcript = transcript.strip()
+                if cleaned_transcript:
+                    st.session_state[voice_key] = cleaned_transcript
+                    voice_value = cleaned_transcript
+                else:
+                    st.session_state.pop(voice_key, None)
+                    voice_value = None
+
+            if typed_value:
+                final_value = typed_value
+                if voice_value is not None:
+                    st.session_state.pop(voice_key, None)
+                    voice_value = None
+            else:
+                final_value = voice_value or ""
+
+            if final_value:
+                state.set_followup_response(index, final_value)
+                state.clear_followup_requirement(index)
+            else:
+                st.session_state.pop(voice_key, None)
+                state.clear_followup_response(index)
+                if entry and entry.get("text"):
+                    state.mark_followup_required(index)
+
+            display_value = typed_value if typed_value else (voice_value or "")
+            st.session_state[response_key] = display_value
+
             st.text_area(
                 "Your follow-up answer",
                 key=response_key,
-                value=st.session_state.get(response_key, ""),
                 placeholder="Share more details here...",
                 height=100,
             )
             transcript_placeholder = st.empty()
 
-        transcript = speech_controls.process_audio_recording(
-            form_key=f"followup_{index}",
-            prompt="Record your follow-up answer",
-        )
-
-    typed_value = str(st.session_state.get(response_key, "")).strip()
-    voice_value = st.session_state.get(voice_key)
-    final_value = None
-
-    if transcript:
-        cleaned_transcript = transcript.strip()
-        if cleaned_transcript:
-            st.session_state[voice_key] = cleaned_transcript
-            voice_value = cleaned_transcript
-            final_value = cleaned_transcript
-        else:
-            st.session_state.pop(voice_key, None)
-            voice_value = None
-
-    if final_value is None:
-        if typed_value:
-            final_value = typed_value
-            st.session_state.pop(voice_key, None)
-            voice_value = None
-        elif voice_value:
-            final_value = voice_value
-        else:
-            final_value = ""
-
-    if final_value:
-        state.set_followup_response(index, final_value)
-        state.clear_followup_requirement(index)
-    else:
-        state.clear_followup_response(index)
-        st.session_state.pop(voice_key, None)
-        if entry and entry.get("text"):
-            state.mark_followup_required(index)
-
-    preview_text = st.session_state.get(voice_key)
-    if preview_text:
-        transcript_placeholder.markdown(f"_Recorded follow-up answer:_ {preview_text}")
-    else:
-        transcript_placeholder.empty()
+            preview_text = st.session_state.get(voice_key)
+            if preview_text:
+                transcript_placeholder.markdown(f"_Recorded follow-up answer:_ {preview_text}")
+            else:
+                transcript_placeholder.empty()
