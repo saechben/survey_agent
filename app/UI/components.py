@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 
 import streamlit as st
 
@@ -13,6 +13,7 @@ from . import analysis, followups, speech_controls, state
 
 PLACEHOLDER_OPTION = "Select an option..."
 _LOGO_PATH = Path(__file__).parent / "images" / "deloitte.jpg"
+_PACMAN_PATH = Path(__file__).parent / "images" / "pacman.gif"
 
 
 @lru_cache(maxsize=1)
@@ -51,6 +52,112 @@ def render_fixed_logo() -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+@lru_cache(maxsize=1)
+def _load_pacman_background_base64() -> str | None:
+    if not _PACMAN_PATH.exists():
+        return None
+    return base64.b64encode(_PACMAN_PATH.read_bytes()).decode("ascii")
+
+
+def render_start_page(on_start: Callable[[], None]) -> None:
+    """Display the introductory screen shown before the survey begins."""
+
+    encoded = _load_pacman_background_base64()
+    pacman_overlay = ""
+    if encoded:
+        pacman_overlay = f"""
+        [data-testid="stAppViewContainer"]::after {{
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/gif;base64,{encoded}");
+            background-repeat: no-repeat;
+            background-position: center 120%;
+            background-size: min(35vmin, 260px);
+            opacity: 0.8;
+            pointer-events: none;
+            image-rendering: pixelated;
+            z-index: 0;
+        }}
+        """
+
+    st.markdown(
+        f"""
+        <style>
+        body {{
+            background-color: #000;
+        }}
+        [data-testid="stAppViewContainer"] {{
+            background-color: #000;
+        }}
+        [data-testid="stAppViewContainer"]::before {{
+            display: none !important;
+        }}
+        {pacman_overlay}
+        [data-testid="stAppViewContainer"] > .main {{
+            position: relative;
+            z-index: 1;
+            background: transparent;
+        }}
+        [data-testid="stAppViewContainer"] > .main .block-container {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 0;
+            background: transparent;
+            gap: 2rem;
+            text-align: center;
+        }}
+        .start-page-title {{
+            font-size: 3rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 24px rgba(255, 255, 255, 0.3);
+        }}
+        .start-page-subtitle {{
+            color: #d5d5d5;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }}
+        .stButton>button {{
+            background: linear-gradient(135deg, #ff007f, #ffda1f 55%, #05f2f2);
+            color: #140021;
+            font-size: 1.2rem;
+            padding: 1rem 3rem;
+            border-radius: 999px;
+            border: none;
+            box-shadow: 0 0 30px rgba(255, 122, 201, 0.55);
+            font-weight: 700;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+            z-index: 1;
+        }}
+        .stButton>button:hover {{
+            transform: translateY(-3px) scale(1.04);
+            box-shadow: 0 0 46px rgba(255, 122, 201, 0.8);
+        }}
+        .stButton>button:focus {{
+            outline: none;
+            box-shadow: 0 0 0 0.25rem rgba(255, 0, 163, 0.45);
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown('<div class="start-page-title">Welcome to the survey</div>', unsafe_allow_html=True)
+    st.markdown('<div class="start-page-subtitle">Take a breath, then press the button when you are ready.</div>', unsafe_allow_html=True)
+
+    button_left, button_center, button_right = st.columns([1, 1, 1])
+    with button_center:
+        if st.button("Start survey", key="start_survey_button", type="primary"):
+            on_start()
 
 
 def render_question_header(current_index: int, total_questions: int, question_text: str) -> None:

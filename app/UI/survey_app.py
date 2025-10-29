@@ -11,7 +11,6 @@ def run_app() -> None:
     """Entry point for the Streamlit-based survey UI."""
 
     st.set_page_config(page_title="Survey Assistant", page_icon="📝", layout="centered")
-    components.render_fixed_logo()
 
     try:
         survey = SurveyLoader(settings.survey_file_path).survey
@@ -27,6 +26,12 @@ def run_app() -> None:
     if total_questions == 0:
         st.info("No survey questions available.")
         return
+
+    if not state.is_started():
+        components.render_start_page(state.mark_started)
+        return
+
+    components.render_fixed_logo()
 
     if state.is_complete():
         components.render_summary(questions)

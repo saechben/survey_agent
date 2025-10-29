@@ -7,6 +7,7 @@ import streamlit as st
 CURRENT_INDEX_KEY = "current_index"
 RESPONSES_KEY = "responses"
 SURVEY_COMPLETE_KEY = "survey_complete"
+SURVEY_STARTED_KEY = "survey_started"
 FOLLOWUPS_KEY = "followups"
 FOLLOWUP_RESPONSES_KEY = "followup_responses"
 GENERATING_FOLLOWUP_KEY = "generating_followup"
@@ -20,6 +21,7 @@ def reset() -> None:
     st.session_state[CURRENT_INDEX_KEY] = 0
     st.session_state[RESPONSES_KEY] = {}
     st.session_state[SURVEY_COMPLETE_KEY] = False
+    st.session_state[SURVEY_STARTED_KEY] = False
     st.session_state[FOLLOWUPS_KEY] = {}
     st.session_state[FOLLOWUP_RESPONSES_KEY] = {}
     st.session_state[GENERATING_FOLLOWUP_KEY] = False
@@ -39,6 +41,7 @@ def ensure_defaults(total_questions: int) -> None:
     st.session_state.setdefault(CURRENT_INDEX_KEY, 0)
     st.session_state.setdefault(RESPONSES_KEY, {})
     st.session_state.setdefault(SURVEY_COMPLETE_KEY, False)
+    st.session_state.setdefault(SURVEY_STARTED_KEY, False)
     st.session_state.setdefault(FOLLOWUPS_KEY, {})
     st.session_state.setdefault(FOLLOWUP_RESPONSES_KEY, {})
     st.session_state.setdefault(GENERATING_FOLLOWUP_KEY, False)
@@ -90,6 +93,18 @@ def is_complete() -> bool:
     """Return True when the survey has been marked complete."""
 
     return bool(st.session_state[SURVEY_COMPLETE_KEY])
+
+
+def mark_started(is_started: bool = True) -> None:
+    """Persist whether the survey has left the start screen."""
+
+    st.session_state[SURVEY_STARTED_KEY] = bool(is_started)
+
+
+def is_started() -> bool:
+    """Return True when the start screen has been dismissed."""
+
+    return bool(st.session_state[SURVEY_STARTED_KEY])
 
 
 def get_responses() -> Dict[int, str]:
