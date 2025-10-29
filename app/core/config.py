@@ -52,7 +52,7 @@ class Settings:
         speech_provider = _strip_or_none(os.getenv("SPEECH_PROVIDER")) or "openai"
         speech_stt_model = _strip_or_none(os.getenv("SPEECH_STT_MODEL")) or "whisper-1"
         speech_tts_model = _strip_or_none(os.getenv("SPEECH_TTS_MODEL")) or "gpt-4o-mini-tts"
-        speech_tts_voice = _strip_or_none(os.getenv("SPEECH_TTS_VOICE")) or "alloy"
+        speech_tts_voice = _strip_or_none(os.getenv("SPEECH_TTS_VOICE")) or "nova"
         speech_tts_format = _strip_or_none(os.getenv("SPEECH_TTS_FORMAT")) or "mp3"
         speech_language = _strip_or_none(os.getenv("SPEECH_LANGUAGE"))
 
