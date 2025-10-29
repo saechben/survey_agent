@@ -36,21 +36,18 @@ def render_tts_toggle(*, help_text: str | None = None) -> bool:
     """Render the auto-text-to-speech toggle button."""
 
     enabled = bool(st.session_state.get(_AUTO_TTS_STATE_KEY, False))
-    label = "🔊 Auto speech on" if enabled else "🔈 Auto speech off"
-    button_type = "primary" if enabled else "secondary"
-    clicked = st.button(
+    label = f"🎙️ {'On' if enabled else 'Off'}"
+    toggle_value = st.toggle(
         label,
+        value=enabled,
         key=_AUTO_TTS_BUTTON_KEY,
-        type=button_type,
-        use_container_width=True,
         help=help_text or "Toggle automatic text-to-speech playback.",
     )
-    if clicked:
-        enabled = not enabled
-        st.session_state[_AUTO_TTS_STATE_KEY] = enabled
+    if toggle_value != enabled:
+        st.session_state[_AUTO_TTS_STATE_KEY] = toggle_value
         _clear_speech_states()
     else:
-        st.session_state.setdefault(_AUTO_TTS_STATE_KEY, enabled)
+        st.session_state.setdefault(_AUTO_TTS_STATE_KEY, toggle_value)
 
     return bool(st.session_state[_AUTO_TTS_STATE_KEY])
 
