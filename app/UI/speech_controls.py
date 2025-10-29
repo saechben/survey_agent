@@ -17,7 +17,7 @@ _AUTO_TTS_BUTTON_KEY = "speech_auto_tts_button"
 _QUESTION_INDEX_TRACK_KEY = "speech_last_question_index"
 _AUDIO_EVENT_STATE_KEY = "speech_audio_events"
 _TYPEWRITER_DONE_KEY = "speech_typewriter_complete"
-_TYPEWRITER_DELAY_SECONDS = 0.085
+_TYPEWRITER_DELAY_SECONDS = 0.0425
 _SESSION_VERSION_KEY = "speech_audio_session_version"
 _RECORDING_STATE_SUFFIX = "_recording_active"
 _AUDIO_WIDGET_SUFFIX = "_audio_input"
@@ -32,16 +32,22 @@ def get_speech_service() -> OpenAISpeechService:
     return OpenAISpeechService(api_key=settings.llm_api_key, settings=settings.speech)
 
 
-def render_tts_toggle(*, help_text: str | None = None) -> bool:
+def render_tts_toggle(
+    *,
+    help_text: str | None = None,
+    label_visibility: str = "visible",
+    label: str | None = None,
+) -> bool:
     """Render the auto-text-to-speech toggle button."""
 
     enabled = bool(st.session_state.get(_AUTO_TTS_STATE_KEY, False))
-    label = f"🎙️ {'On' if enabled else 'Off'}"
+    toggle_label = label if label is not None else f"🎙️ {'On' if enabled else 'Off'}"
     toggle_value = st.toggle(
-        label,
+        toggle_label,
         value=enabled,
         key=_AUTO_TTS_BUTTON_KEY,
         help=help_text or "Toggle automatic text-to-speech playback.",
+        label_visibility=label_visibility,
     )
     if toggle_value != enabled:
         st.session_state[_AUTO_TTS_STATE_KEY] = toggle_value

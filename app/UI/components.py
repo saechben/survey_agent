@@ -240,6 +240,26 @@ def render_start_page(on_start: Callable[[], None]) -> None:
             text-align: center;
             margin-bottom: 2.5rem;
         }}
+        .start-page-voice-toggle-container {{
+            display: flex;
+            justify-content: center;
+        }}
+        .start-page-voice-toggle-wrapper {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 999px;
+            background: rgba(20, 0, 33, 0.55);
+            box-shadow: 0 0 24px rgba(255, 122, 201, 0.25);
+        }}
+        .start-page-voice-toggle-wrapper label {{
+            color: #ffda1f !important;
+            font-size: clamp(0.75rem, 1.7vw, 0.95rem);
+            font-weight: 600 !important;
+            text-shadow: 0 0 18px rgba(255, 218, 31, 0.35);
+            margin: 0 !important;
+        }}
         .stButton>button {{
             background: linear-gradient(135deg, #ff007f, #ffda1f 55%, #05f2f2);
             color: #140021;
@@ -268,6 +288,18 @@ def render_start_page(on_start: Callable[[], None]) -> None:
 
     st.markdown('<div class="start-page-title">Welcome to the survey</div>', unsafe_allow_html=True)
     st.markdown('<div class="start-page-subtitle">Take a breath, then press the button when you are ready.</div>', unsafe_allow_html=True)
+
+    voice_spacer_left, voice_toggle_col, voice_spacer_right = st.columns([1, 3, 1])
+    with voice_toggle_col:
+        st.markdown('<div class="start-page-voice-toggle-container">', unsafe_allow_html=True)
+        st.markdown('<div class="start-page-voice-toggle-wrapper">', unsafe_allow_html=True)
+        speech_controls.render_tts_toggle(
+            help_text="Automatically narrate questions and follow-up prompts.",
+            label="Not interested in reading? Activate voice mode here.",
+        )
+        st.markdown('</div></div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
     button_left, button_center, button_right = st.columns([1, 1, 1])
     with button_center:
