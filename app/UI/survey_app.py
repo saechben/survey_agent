@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.UI import components, navigation, state
+from app.UI import components, navigation, speech_controls, state
 from app.core.config import settings
 from app.services.survey_loader import SurveyLoader
 
@@ -20,6 +20,9 @@ def run_app() -> None:
 
     questions = survey.questions
     total_questions = len(questions)
+
+    prefetch_state = speech_controls.prefetch_question_audio([question.question for question in questions])
+    components.render_prefetch_indicator(prefetch_state)
 
     state.ensure_defaults(total_questions)
 

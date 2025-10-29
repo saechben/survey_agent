@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -21,6 +21,8 @@ _TYPEWRITER_DELAY_SECONDS = 0.085
 _SESSION_VERSION_KEY = "speech_audio_session_version"
 _RECORDING_STATE_SUFFIX = "_recording_active"
 _AUDIO_WIDGET_SUFFIX = "_audio_input"
+_AUDIO_CACHE_META_KEY = "speech_audio_cache_meta"
+_PREFETCH_STATE_KEY = "speech_question_prefetch_state"
 
 
 @st.cache_resource
@@ -362,9 +364,16 @@ def _render_autoplay_audio(
 
 def _synthesize_with_cache(cache_id: str, text: str) -> bytes:
     cache = _get_audio_cache()
-    if cache_id not in cache:
-        cache[cache_id] = get_speech_service().synthesize(text)
-    return cache[cache_id]
+    meta = _get_audio_cache_meta()
+    version = _text_version(text)
+    cached_bytes = cache.get(cache_id)
+    if cached_bytes is not None and meta.get(cache_id) == version:
+        return cached_bytes
+
+    audio_bytes = get_speech_service().synthesize(text)
+    cache[cache_id] = audio_bytes
+    meta[cache_id] = version
+    return audio_bytes
 
 
 def _playback_state() -> Dict[str, Dict[str, Any]]:
@@ -402,6 +411,10 @@ def _get_audio_cache() -> Dict[str, bytes]:
     return st.session_state.setdefault(_AUDIO_CACHE_KEY, {})
 
 
+def _get_audio_cache_meta() -> Dict[str, str]:
+    return st.session_state.setdefault(_AUDIO_CACHE_META_KEY, {})
+
+
 def _format_to_mime(fmt: str) -> str:
     lookup = {
         "mp3": "audio/mpeg",
@@ -413,3 +426,104 @@ def _format_to_mime(fmt: str) -> str:
         "pcm": "audio/wav",
     }
     return lookup.get((fmt or "mp3").lower(), "audio/mpeg")
+
+
+def prefetch_question_audio(question_texts: Sequence[str]) -> Dict[str, Any]:
+    """Eagerly synthesize audio for the main survey questions."""
+
+    state = _prefetch_state()
+    digest = _questions_digest(question_texts)
+    total = len(question_texts)
+
+    if state.get("digest") != digest:
+        _reset_question_audio_cache()
+        state.update(
+            {
+                "status": "idle",
+                "completed": 0,
+                "total": total,
+                "errors": [],
+                "digest": digest,
+            }
+        )
+    else:
+        state.setdefault("total", total)
+        state.setdefault("errors", [])
+
+    if (
+        state.get("status") == "complete"
+        and state.get("completed", 0) >= total
+        and _question_audio_ready(question_texts)
+    ):
+        return state
+    if state.get("status") == "complete" and not _question_audio_ready(question_texts):
+        state.update({"status": "idle", "completed": 0})
+
+    if total == 0:
+        state.update({"status": "complete", "completed": 0})
+        return state
+
+    state["status"] = "running"
+
+    completed = state.get("completed", 0)
+    errors: list[Dict[str, Any]] = []
+
+    for index, raw_text in enumerate(question_texts):
+        cache_id = f"question_{index}"
+        cleaned = (raw_text or "").strip()
+        if not cleaned:
+            completed = min(completed + 1, total)
+            state["completed"] = completed
+            continue
+
+        try:
+            _synthesize_with_cache(cache_id, cleaned)
+        except SpeechServiceError as exc:
+            errors.append({"index": index, "message": str(exc)})
+        except Exception as exc:
+            errors.append({"index": index, "message": str(exc)})
+
+        completed = min(index + 1, total)
+        state["completed"] = completed
+
+    state["errors"] = errors
+    state["status"] = "complete" if not errors else "partial"
+
+    return state
+
+
+def _prefetch_state() -> Dict[str, Any]:
+    return st.session_state.setdefault(
+        _PREFETCH_STATE_KEY,
+        {"status": "idle", "completed": 0, "total": 0, "errors": [], "digest": ""},
+    )
+
+
+def _reset_question_audio_cache() -> None:
+    cache = _get_audio_cache()
+    meta = _get_audio_cache_meta()
+    question_keys = [key for key in list(cache.keys()) if key.startswith("question_")]
+    for key in question_keys:
+        cache.pop(key, None)
+        meta.pop(key, None)
+
+
+def _question_audio_ready(question_texts: Sequence[str]) -> bool:
+    cache = _get_audio_cache()
+    meta = _get_audio_cache_meta()
+    for index, raw_text in enumerate(question_texts):
+        cleaned = (raw_text or "").strip()
+        if not cleaned:
+            continue
+        cache_id = f"question_{index}"
+        version = _text_version(cleaned)
+        cached_version = meta.get(cache_id)
+        audio_bytes = cache.get(cache_id)
+        if cached_version != version or audio_bytes is None:
+            return False
+    return True
+
+
+def _questions_digest(question_texts: Sequence[str]) -> str:
+    normalized = "\n".join((value or "").strip() for value in question_texts)
+    return hashlib.md5(normalized.encode("utf-8")).hexdigest()

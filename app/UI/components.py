@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, List
+from typing import Any, Callable, Dict, List
 
 import streamlit as st
 
@@ -49,6 +49,121 @@ def render_fixed_logo() -> None:
             pointer-events: none;
         }}
         </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_prefetch_indicator(prefetch_state: Dict[str, Any] | None) -> None:
+    """Display a floating progress indicator while question audio is warming up."""
+
+    if not prefetch_state:
+        return
+
+    status = str(prefetch_state.get("status", "idle"))
+    total = int(prefetch_state.get("total", 0) or 0)
+    completed = int(prefetch_state.get("completed", 0) or 0)
+    errors = prefetch_state.get("errors") or []
+
+    show_indicator = False
+    message = "Preparing survey"
+
+    if status in {"idle", "running"}:
+        show_indicator = total > 0
+    elif status == "partial":
+        show_indicator = True
+        if errors:
+            message = "Retrying audio prep"
+    elif errors and status == "complete":
+        show_indicator = True
+        message = "Audio prep issues"
+
+    if not show_indicator:
+        return
+
+    progress_ratio = 0.0
+    if total > 0:
+        progress_ratio = max(0.0, min(completed / total, 1.0))
+    progress_percent = int(progress_ratio * 100)
+    spinner_color = "#ffda1f" if not errors else "#ff4d4f"
+
+    extra_detail = ""
+    if total > 0:
+        extra_detail = f"{completed}/{total}"
+    if errors and status != "partial":
+        message = "Audio prep needs attention"
+
+    st.markdown(
+        f"""
+        <style>
+        #survey-prefetch-indicator {{
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.9rem;
+            border-radius: 999px;
+            background: rgba(20, 0, 33, 0.85);
+            box-shadow: 0 0 16px rgba(255, 122, 201, 0.38);
+            color: #faf5ff;
+            font-size: 0.85rem;
+            backdrop-filter: blur(6px);
+            min-width: 210px;
+        }}
+        #survey-prefetch-indicator .spinner {{
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: {spinner_color};
+            animation: survey-spin 0.9s linear infinite;
+        }}
+        #survey-prefetch-indicator .content {{
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            flex: 1;
+        }}
+        #survey-prefetch-indicator .label {{
+            font-weight: 600;
+            line-height: 1.2;
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }}
+        #survey-prefetch-indicator .progress-track {{
+            position: relative;
+            width: 100%;
+            height: 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+        }}
+        #survey-prefetch-indicator .progress-fill {{
+            position: absolute;
+            inset: 0;
+            width: {progress_percent}%;
+            background: linear-gradient(135deg, #ff007f, #ffda1f);
+        }}
+        @keyframes survey-spin {{
+            to {{ transform: rotate(360deg); }}
+        }}
+        </style>
+        <div id="survey-prefetch-indicator">
+            <div class="spinner"></div>
+            <div class="content">
+                <div class="label">
+                    <span>{message}</span>
+                    <span>{extra_detail}</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )

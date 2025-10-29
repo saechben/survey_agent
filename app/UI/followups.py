@@ -146,11 +146,6 @@ def render_followup_question(index: int) -> None:
         animate=auto_enabled,
         prefix_markdown=FOLLOW_UP_LABEL,
     )
-    speech_controls.render_playback_button(
-        text_value,
-        label="🔊 Play follow-up question",
-        cache_id=cache_id,
-    )
 
 
 def render_followup_response_input(index: int) -> None:
