@@ -181,11 +181,6 @@ def render_question_header(current_index: int, total_questions: int, question_te
         cache_id=question_cache_id,
         animate=auto_enabled,
     )
-    speech_controls.render_playback_button(
-        question_text,
-        label="🔊 Play question audio",
-        cache_id=question_cache_id,
-    )
 
 
 def render_answer_widget(question: SurveyQuestion, index: int) -> None:

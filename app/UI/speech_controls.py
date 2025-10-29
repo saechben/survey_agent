@@ -162,33 +162,6 @@ def render_question_text(text: str, *, cache_id: str, animate: bool, prefix_mark
     _typewriter_state()[cache_id] = True
 
 
-def render_playback_button(text: str, *, label: str, cache_id: str) -> None:
-    """Render a manual playback button when auto TTS is disabled."""
-
-    if is_auto_tts_enabled():
-        return
-
-    cleaned = (text or "").strip()
-    if not cleaned:
-        return
-
-    button_key = f"{cache_id}_play_button"
-    audio_state_key = f"{cache_id}_audio_bytes"
-
-    if st.button(label, key=button_key):
-        try:
-            audio_bytes = _synthesize_with_cache(cache_id, cleaned)
-            st.session_state[audio_state_key] = audio_bytes
-        except SpeechServiceError as exc:  # pragma: no cover - UI feedback path
-            st.error(f"Speech synthesis failed: {exc}")
-        except Exception as exc:  # pragma: no cover - UI feedback path
-            st.error(f"Unexpected speech synthesis error: {exc}")
-
-    audio_bytes = st.session_state.get(audio_state_key)
-    if audio_bytes:
-        st.audio(audio_bytes, format=_format_to_mime(settings.speech.tts_format))
-
-
 def maybe_autoplay_followup(text: str, *, cache_id: str) -> None:
     """Automatically play follow-up questions once when auto TTS is enabled."""
 
