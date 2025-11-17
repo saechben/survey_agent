@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY pyproject.toml poetry.lock* ./
 
-RUN poetry install --no-root --no-dev --no-ansi
+RUN poetry install --no-root --without dev --no-ansi
 
 COPY . .
 
