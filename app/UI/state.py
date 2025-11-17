@@ -4,6 +4,8 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 
+from app.models.survey import Survey
+
 CURRENT_INDEX_KEY = "current_index"
 RESPONSES_KEY = "responses"
 SURVEY_COMPLETE_KEY = "survey_complete"
@@ -13,6 +15,8 @@ FOLLOWUP_RESPONSES_KEY = "followup_responses"
 GENERATING_FOLLOWUP_KEY = "generating_followup"
 FOLLOWUP_REQUIRED_KEY = "followup_required"
 ANALYSIS_VISIBLE_KEY = "analysis_visible"
+CUSTOM_SURVEY_KEY = "custom_survey"
+SURVEY_BUILDER_ACTIVE_KEY = "survey_builder_active"
 
 
 def reset() -> None:
@@ -27,6 +31,7 @@ def reset() -> None:
     st.session_state[GENERATING_FOLLOWUP_KEY] = False
     st.session_state[FOLLOWUP_REQUIRED_KEY] = {}
     st.session_state[ANALYSIS_VISIBLE_KEY] = False
+    st.session_state.setdefault(SURVEY_BUILDER_ACTIVE_KEY, False)
 
     for key in [name for name in st.session_state.keys() if name.startswith("response_")]:
         del st.session_state[key]
@@ -47,6 +52,7 @@ def ensure_defaults(total_questions: int) -> None:
     st.session_state.setdefault(GENERATING_FOLLOWUP_KEY, False)
     st.session_state.setdefault(FOLLOWUP_REQUIRED_KEY, {})
     st.session_state.setdefault(ANALYSIS_VISIBLE_KEY, False)
+    st.session_state.setdefault(SURVEY_BUILDER_ACTIVE_KEY, False)
 
     if total_questions == 0:
         st.session_state[CURRENT_INDEX_KEY] = 0
@@ -226,3 +232,39 @@ def is_analysis_visible() -> bool:
     """Return True when the analysis section should be shown."""
 
     return bool(st.session_state[ANALYSIS_VISIBLE_KEY])
+
+
+def set_custom_survey(survey: Survey | None) -> None:
+    """Persist a custom survey definition to override the default."""
+
+    if survey is None:
+        st.session_state.pop(CUSTOM_SURVEY_KEY, None)
+    else:
+        st.session_state[CUSTOM_SURVEY_KEY] = survey
+
+
+def get_custom_survey() -> Survey | None:
+    """Return the active custom survey if one has been defined."""
+
+    survey = st.session_state.get(CUSTOM_SURVEY_KEY)
+    if isinstance(survey, Survey):
+        return survey
+    return None
+
+
+def clear_custom_survey() -> None:
+    """Remove any stored custom survey definition."""
+
+    st.session_state.pop(CUSTOM_SURVEY_KEY, None)
+
+
+def set_builder_active(is_active: bool) -> None:
+    """Toggle whether the survey builder screen should be displayed."""
+
+    st.session_state[SURVEY_BUILDER_ACTIVE_KEY] = bool(is_active)
+
+
+def is_builder_active() -> bool:
+    """Return True when the survey builder screen should be shown."""
+
+    return bool(st.session_state.get(SURVEY_BUILDER_ACTIVE_KEY, False))

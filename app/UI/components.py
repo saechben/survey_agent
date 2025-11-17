@@ -7,13 +7,19 @@ from typing import Any, Callable, Dict, List
 
 import streamlit as st
 
-from app.models.survey import SurveyQuestion
+from app.models.survey import (
+    CategoricalAnswer,
+    FreeTextAnswer,
+    Survey,
+    SurveyQuestion,
+)
 
 from . import analysis, followups, speech_controls, state
 
 PLACEHOLDER_OPTION = "Select an option..."
 _LOGO_PATH = Path(__file__).parent / "images" / "deloitte.jpg"
 _PACMAN_PATH = Path(__file__).parent / "images" / "pacman.gif"
+_BUILDER_COUNT_KEY = "survey_builder_question_count"
 
 
 @lru_cache(maxsize=1)
@@ -176,7 +182,7 @@ def _load_pacman_background_base64() -> str | None:
     return base64.b64encode(_PACMAN_PATH.read_bytes()).decode("ascii")
 
 
-def render_start_page(on_start: Callable[[], None]) -> None:
+def render_start_page(on_start: Callable[[], None], on_generate: Callable[[], None]) -> None:
     """Display the introductory screen shown before the survey begins."""
 
     encoded = _load_pacman_background_base64()
@@ -305,6 +311,143 @@ def render_start_page(on_start: Callable[[], None]) -> None:
     with button_center:
         if st.button("Start survey", key="start_survey_button", type="primary"):
             on_start()
+    with button_right:
+        st.button(
+            "Generate survey",
+            key="open_builder_button",
+            help="Design your own set of questions before starting.",
+            on_click=on_generate,
+        )
+
+
+def render_survey_builder(
+    *,
+    on_cancel: Callable[[], None],
+    on_start: Callable[[Survey], None],
+) -> None:
+    """Render the custom survey builder workflow."""
+
+    st.title("Design your survey")
+    st.write(
+        "Add questions, pick whether each one is free text or multiple choice, and then launch the survey."
+    )
+
+    builder_count = int(st.session_state.get(_BUILDER_COUNT_KEY, 1) or 1)
+    st.session_state.setdefault(_BUILDER_COUNT_KEY, builder_count)
+
+    control_cols = st.columns([1, 1, 1])
+    with control_cols[0]:
+        if st.button("Add question", key="builder_add_question", use_container_width=True):
+            builder_count += 1
+            st.session_state[_BUILDER_COUNT_KEY] = builder_count
+    with control_cols[1]:
+        disable_remove = builder_count <= 1
+        if st.button(
+            "Remove last",
+            key="builder_remove_question",
+            disabled=disable_remove,
+            use_container_width=True,
+        ):
+            if builder_count > 1:
+                builder_count -= 1
+                st.session_state[_BUILDER_COUNT_KEY] = builder_count
+                _clear_builder_entry(builder_count)
+    with control_cols[2]:
+        st.button(
+            "Back to intro",
+            key="builder_cancel",
+            use_container_width=True,
+            on_click=on_cancel,
+        )
+
+    st.divider()
+
+    for index in range(builder_count):
+        st.markdown(f"#### Question {index + 1}")
+        question_key = f"builder_question_{index}"
+        type_key = f"builder_type_{index}"
+        choices_key = f"builder_choices_{index}"
+
+        st.text_input(
+            "Question text",
+            key=question_key,
+            placeholder="Ask your question...",
+        )
+
+        question_type = st.selectbox(
+            "Answer type",
+            options=["free_text", "categorical"],
+            key=type_key,
+            format_func=lambda value: "Free text" if value == "free_text" else "Categorical",
+        )
+
+        if question_type == "categorical":
+            st.text_area(
+                "Categories (comma separated)",
+                key=choices_key,
+                placeholder="Option A, Option B, Option C",
+                help="Enter at least two options separated by commas.",
+            )
+        else:
+            st.session_state.pop(choices_key, None)
+
+        st.markdown("---")
+
+    start_clicked = st.button(
+        "Start survey with these questions",
+        key="builder_start_button",
+        type="primary",
+        use_container_width=True,
+    )
+
+    if not start_clicked:
+        return
+
+    survey, errors = _build_survey_from_builder(builder_count)
+    if errors:
+        for message in errors:
+            st.error(message)
+        return
+
+    on_start(survey)
+
+
+def _clear_builder_entry(index: int) -> None:
+    for suffix in ("question", "type", "choices"):
+        st.session_state.pop(f"builder_{suffix}_{index}", None)
+
+
+def _build_survey_from_builder(count: int) -> tuple[Survey | None, List[str]]:
+    questions: List[SurveyQuestion] = []
+    errors: List[str] = []
+
+    for index in range(count):
+        position = index + 1
+        question_text = str(st.session_state.get(f"builder_question_{index}", "")).strip()
+        question_type = str(st.session_state.get(f"builder_type_{index}", "free_text"))
+
+        if not question_text:
+            errors.append(f"Question {position}: text is required.")
+            continue
+
+        if question_type == "categorical":
+            raw_choices = str(st.session_state.get(f"builder_choices_{index}", "")).strip()
+            choices = [choice.strip() for choice in raw_choices.split(",") if choice.strip()]
+            if len(choices) < 2:
+                errors.append(f"Question {position}: provide at least two categories.")
+                continue
+            answer = CategoricalAnswer(choices=choices)
+        else:
+            answer = FreeTextAnswer()
+
+        questions.append(SurveyQuestion(question=question_text, answer=answer))
+
+    if errors:
+        return None, errors
+    if not questions:
+        return None, ["Add at least one question to start the survey."]
+
+    return Survey(questions=questions), []
 
 
 def render_question_header(current_index: int, total_questions: int, question_text: str) -> None:
