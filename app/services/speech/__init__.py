@@ -1,4 +1,4 @@
 from .base import SpeechService, SpeechServiceError
-from .openai_service import OpenAISpeechService
+from .google_service import GoogleSpeechService
 
-__all__ = ["SpeechService", "SpeechServiceError", "OpenAISpeechService"]
+__all__ = ["SpeechService", "SpeechServiceError", "GoogleSpeechService"]

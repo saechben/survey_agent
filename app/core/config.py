@@ -49,12 +49,12 @@ class Settings:
         self.survey_results_path = Path(results_path).expanduser().resolve()
         self.survey_results_path.parent.mkdir(parents=True, exist_ok=True)
 
-        speech_provider = _strip_or_none(os.getenv("SPEECH_PROVIDER")) or "openai"
-        speech_stt_model = _strip_or_none(os.getenv("SPEECH_STT_MODEL")) or "whisper-1"
-        speech_tts_model = _strip_or_none(os.getenv("SPEECH_TTS_MODEL")) or "gpt-4o-mini-tts"
-        speech_tts_voice = _strip_or_none(os.getenv("SPEECH_TTS_VOICE")) or "nova"
+        speech_provider = _strip_or_none(os.getenv("SPEECH_PROVIDER")) or "gcp"
+        speech_stt_model = _strip_or_none(os.getenv("SPEECH_STT_MODEL")) or "latest_long"
+        speech_tts_model = _strip_or_none(os.getenv("SPEECH_TTS_MODEL")) or "standard"
+        speech_tts_voice = _strip_or_none(os.getenv("SPEECH_TTS_VOICE")) or "en-US-Neural2-C"
         speech_tts_format = _strip_or_none(os.getenv("SPEECH_TTS_FORMAT")) or "mp3"
-        speech_language = _strip_or_none(os.getenv("SPEECH_LANGUAGE"))
+        speech_language = _strip_or_none(os.getenv("SPEECH_LANGUAGE")) or "en-US"
 
         self.speech = SpeechSettings(
             provider=speech_provider,

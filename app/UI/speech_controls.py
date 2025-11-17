@@ -9,7 +9,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from app.core.config import settings
-from app.services.speech import OpenAISpeechService, SpeechServiceError
+from app.services.speech import GoogleSpeechService, SpeechServiceError
 
 _AUDIO_CACHE_KEY = "speech_audio_cache"
 _AUTO_TTS_STATE_KEY = "speech_auto_tts_enabled"
@@ -26,10 +26,10 @@ _PREFETCH_STATE_KEY = "speech_question_prefetch_state"
 
 
 @st.cache_resource
-def get_speech_service() -> OpenAISpeechService:
-    """Instantiate and cache the OpenAI-backed speech service."""
+def get_speech_service() -> GoogleSpeechService:
+    """Instantiate and cache the Google Cloud backed speech service."""
 
-    return OpenAISpeechService(api_key=settings.llm_api_key, settings=settings.speech)
+    return GoogleSpeechService(settings=settings.speech)
 
 
 def render_tts_toggle(
