@@ -10,6 +10,14 @@ Streamlit-powered survey assistant that blends traditional questionnaires with A
 - Analysis agent that answers natural-language questions about captured responses.
 - Simple text-file survey format that supports both free-text and categorical questions.
 
+## Functionality
+- Conversational Flow & Guardrails: Orchestrates a question-by-question journey with clear progress, previous/next controls, and finish gating that ensures required follow-ups are captured before moving on.
+- Voice-First UX: Autoplay narration, typewriter-synced text, and background audio prefetching keep the experience silky-smooth; one-click mic capture pairs Whisper transcription with GPT‑4o‑mini TTS for hands-free answering.
+- Smart Follow-Ups: A compact PydanticAI agent reads free-text answers and decides when to probe or skip, providing concise follow-up prompts (with graceful fallbacks if the model is unavailable).
+- Lightweight Persistence: Stores responses, follow-up prompts, and follow-up answers in a tidy JSON ledger—easy to inspect today, trivial to swap for a real database tomorrow.
+- Inline Analytics: An embedded analysis agent answers natural-language questions grounded in your recorded survey snapshot, streaming approachable, bullet-point insights with live status updates.
+- Simple Authoring & Config: Author surveys as readable `.txt` files (add `|` options for multiple choice) and tune behaviour via environment variables for models, speech voices, formats, and file paths.
+
 ## Quick Start
 ```bash
 # Python 3.13+ and Poetry are required
