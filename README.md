@@ -10,6 +10,17 @@ Streamlit-powered survey assistant that blends traditional questionnaires with A
 - Analysis agent that answers natural-language questions about captured responses.
 - Simple text-file survey format that supports both free-text and categorical questions.
 
+## Functionality
+- Orchestrated survey flow: progress-aware navigation, restart safeguards, and stateful responses that survive edits.
+- Voice-forward experience: natural TTS for questions and follow-ups, plus one-click microphone capture with instant transcription.
+- Smart clarifications: a lightweight agent evaluates free‑text answers and asks crisp, contextual follow‑ups only when they add value.
+- Snappy audio pipeline: ahead‑of‑time synthesis and per‑question caching, synchronized with a subtle typewriter reveal.
+- On‑demand survey builder: compose new questionnaires in-app, mixing categorical and free‑text items.
+- Durable storage: each session is written as structured JSON with follow‑up lineage, ready for downstream analytics.
+- Embedded analysis copilot: ask natural‑language questions about responses and get grounded, concise answers.
+- Pluggable services: clean interfaces for LLMs and speech let you swap providers and voices via environment variables.
+- Privacy‑minded defaults: audio stays in memory for playback; nothing is persisted unless you configure it.
+
 ## Quick Start
 ```bash
 # Python 3.13+ and Poetry are required
