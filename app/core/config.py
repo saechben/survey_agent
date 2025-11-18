@@ -40,7 +40,7 @@ class Settings:
             raise RuntimeError("Missing LLM/OpenAI model name in environment or .env file.")
         self.llm_model = model_name
 
-        survey_path = _strip_or_none(os.getenv("SURVEY_FILE_PATH")) or "app/data/real_survey.txt"
+        survey_path = _strip_or_none(os.getenv("SURVEY_FILE_PATH")) or "app/data/strategic_outcomes_survey.txt"
         self.survey_file_path = Path(survey_path).expanduser().resolve()
         if not self.survey_file_path.is_file():
             raise RuntimeError(f"Survey file not found at {self.survey_file_path}")

@@ -29,7 +29,7 @@ LLM_API_KEY=sk-...
 LLM_MODEL=gpt-4o-mini
 
 # Optional overrides shown with their defaults
-SURVEY_FILE_PATH=app/data/real_survey.txt
+SURVEY_FILE_PATH=app/data/strategic_outcomes_survey.txt
 SURVEY_RESULTS_PATH=app/data/survey_results.txt
 SPEECH_PROVIDER=openai
 SPEECH_STT_MODEL=whisper-1

@@ -1,28 +1,33 @@
 {
   "active": {
     "responses": {
-      "0": "Developing future-ready teams",
-      "1": "wrong output of my team because of hallucinations",
-      "2": "Technology modernization",
-      "3": "no"
+      "0": "Workforce enablement",
+      "1": "We are using it for different things",
+      "2": "Misaligned business priorities",
+      "3": "Digital customer experience",
+      "5": "Risk & security mindset",
+      "6": "No I have nothing to add. Thanks for asking"
     },
     "followups": {
       "1": {
-        "answer": "wrong output of my team because of hallucinations",
-        "text": "Can you share a specific instance where AI hallucinations led to incorrect outputs in your team, and what you did to address it?",
+        "answer": "We are using it for different things",
+        "text": "Which AI/automation use cases are you deploying and what outcomes do you expect?",
         "displayed": true,
-        "source": "llm"
+        "source": "agent",
+        "should_ask": true,
+        "rationale": "The response is vague and lacks concrete use cases and expected impact, making it difficult to assess alignment with the survey objective."
       },
-      "3": {
-        "answer": "no",
-        "text": "Is there anything else you'd like to add or clarify?",
+      "6": {
+        "answer": "No I have nothing to add. Thanks for asking",
+        "text": null,
         "displayed": true,
-        "source": "llm"
+        "source": "agent_skip",
+        "should_ask": false,
+        "rationale": "Respondent stated they have nothing to add and thanked you; no further follow-up question is needed."
       }
     },
     "followup_responses": {
-      "1": "ownership",
-      "3": "no"
+      "1": "We are implementing a RAG system for internal documents"
     }
   }
 }

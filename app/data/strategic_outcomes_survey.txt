@@ -1,0 +1,8 @@
+# strategic outcomes survey
+What are the top strategic outcomes you aim to achieve with technology over the next 3-5 years? | Revenue growth, Operational efficiency, Customer experience transformation, New business models, Risk reduction & resilience, Workforce enablement, Sustainability goals, Other
+How is your organization currently leveraging AI and automation to improve decision-making and execution?
+What are the biggest constraints slowing down your technology organization today? | Legacy systems & technical debt, Talent shortages, Budget limitations, Governance & compliance, Misaligned business priorities, Slow decision-making culture, Insufficient data maturity, Other
+Which areas represent your highest investment priorities over the next 18-24 months? | Cloud modernization, Data & analytics platforms, Cybersecurity, AI/ML capabilities, Digital customer experience, Developer productivity & platforms, Process automation, Emerging tech R&D, Other
+How would you describe the maturity of collaboration between business and technology teams in your organization?
+What capabilities do you believe a future-ready technology leader must strengthen to stay effective? | Strategic vision, Change leadership, Talent development, Financial acumen, Product & platform thinking, Risk & security mindset, Innovation management, Communication & influence, Other
+Anything else you'd like to add?
